@@ -1,0 +1,148 @@
+<html>
+<head>
+	<title>Prime Number Checker</title>
+<style>
+.flex-box{
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	width: 100vw;
+}
+
+
+#numberInput{
+	height: 6%;
+	width: 45%;
+	font-size: 300%;
+    padding-left: 20px;
+	color: purple;
+}
+
+#output{
+	height: 15%;
+	width: 50%;
+	margin-top: 1%;
+	font-size: 200%;
+}
+
+</style>
+</head>
+<body>
+<div class='flex-box'>
+<label for="numberInput">
+	<h1><em>Enter in a Number to see if it is Prime:</em></h1>
+</label>
+<input type="number" id="numberInput" name="numberInput" maxlength="10">
+<div id="output"></div>
+</div>
+
+<script>
+
+const primeCheck = (n) =>  {
+	const seiveArray = (y,arr) =>{
+		//console.log(y,arr);
+		return arr.filter( el => !Number.isInteger(el/y) ); // get rid of any multiples of x
+	}
+	
+	let prime = false;  let reason= null;
+	
+	if( n == null || typeof n !== 'number' ){
+		reason = "Invalid Input.";
+	} else if( !Number.isInteger(n)){
+		reason = "Primes must be Whole Numbers.";
+	}else if(n < 0){
+		reason = "Primes must be Positive Numbers.";
+	} else if ( n == 0 || n== 1 ){
+		reason = `${n} is technically not a Prime.`;
+	} else if ( n == 2 ){
+		prime=true; reason="2 is the only Even Prime.";
+	} else if( /[02468]$/.test(n.toString()) ){ 
+		reason =`${n} is an Even Number.`;
+	} else if( n.toString().slice(-1) == 5 ){ 
+		reason =`${n} is divisible by 5.`;
+	} else if( n == 3 ){ //exempting because of how we are starting
+		prime=true;
+	} else {
+		let sqrt = Math.sqrt(n); // No divisible number can have a minimum divisor greater than it's square root
+		console.log(sqrt);
+		if(Number.isInteger(sqrt)){
+			reason = `${n} has a square root of ${sqrt}`;
+		} else {
+			let limit = Math.ceil(sqrt);
+			let arr = [];
+			for( i = 3; i <= limit; i+=10 ){ // we will deal with exceeding the limit later 
+				arr.push(i,i+4,i+6,i+8); // ends in 3,7,9,7
+			}
+			for(r=0; r > 4; r++){ // easier to just backtrack a few times;
+				if(arr[arr.length-1] > limit){
+					arr.pop();
+				}
+			}
+			
+			let smallestDivisor = null;
+			// If you only dropped 1 element between seives runs; then you are getting close to the seive being ineffective 
+			//( vs simply brute forcing it ) After 3 cumulative instances of only loosing 1 value, stop using the seive
+			let seiveStall = 0;
+			let rounds = 0;
+			while( smallestDivisor === null && arr.length > 0 ){
+				let x = arr[0];
+				let nx = (n/x);
+				if(Number.isInteger(n/x) ){
+					smallestDivisor = x; 
+				} else if ( seiveStall < 5 ) {
+					let oldLength = arr.length;
+					arr = seiveArray(x,arr);
+					let delta = oldLength - arr.length;
+					if(delta == 1){
+						seiveStall += 1;
+						console.log(`SeiveStalling! (${seiveStall}) @ round ${rounds} : ${oldLength-1} elements & x = ${x}`); 
+					}
+					rounds += 1;
+				} else { // seive has stalled
+					arr.pop(); // just pop every element that doesn't match until there are none left
+					if(arr.length == 0) console.log(`Final Pop was ${x}`);
+				}
+			}
+			
+			//At this point we should either have a smallestDivisor, or run out of possible elements ( the seive may also has ceased to be an effective determinant, but the loop is going to keep popping // 	
+						
+			if( smallestDivisor !== null){
+				reason =`The smallest divisor of ${n} is ${smallestDivisor}.`;
+			} else if(arr.length == 0){
+				prime= true;
+			} 
+		}
+	}
+	return ({n,prime, reason});
+}
+
+
+
+/// GUI 
+let inputNumber = '';
+let numberInput = document.getElementById('numberInput');
+let output = document.getElementById('output');
+
+numberInput.addEventListener('change', ()=>{
+	numberInput.value = numberInput.value.replace(/[^\d]/,'');
+	numberInput.value = numberInput.value.length > 15? numberInput.value.slice(0,15) : numberInput.value;
+
+	if( /\d/.test(numberInput.value) ){
+		let start = new Date();
+		output.innerText = 'Checking!';
+		const {n, prime, reason } = primeCheck(parseInt(numberInput.value));
+		
+		output.innerText = `${n} ${prime? 'is': 'is not'} a Prime Number.`;
+			output.innerText += reason? `\n${reason}` : '';
+		let end = new Date();
+			output.innerText +=  `\n${end - start} milliseconds`;
+	} else {
+		output.innerText = '';
+	}
+})
+
+</script>
+</body>
+</html>
